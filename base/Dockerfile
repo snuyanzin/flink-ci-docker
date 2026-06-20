@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # install packages
 RUN set -eux; \
@@ -15,7 +15,7 @@ RUN set -eux; \
 		`# FLINK-18356` \
 		libjemalloc-dev \
 		curl \
-		libapr1 \
+		libapr1t64 \
 		unzip \
 		uuid-runtime \
 		jq \
