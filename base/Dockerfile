@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # install packages
 RUN set -eux; \
@@ -15,7 +15,8 @@ RUN set -eux; \
 		`# FLINK-18356` \
 		libjemalloc-dev \
 		curl \
-		libapr1 \
+		`# libapr1 was renamed to libapr1t64 in the time_t transition` \
+		libapr1t64 \
 		unzip \
 		uuid-runtime \
 		jq \
@@ -109,6 +110,16 @@ ENV LC_ALL "en_US.UTF-8"
 ENV LANG "en_US.UTF-8"
 ENV LANGUAGE "en_US.UTF-8"
 
-# Install OpenSSL version that's required by netty-tcnative
+# OpenSSL 1.0.0, required by netty-tcnative on older Flink branches (e.g. 1.20)
 RUN wget -r --no-parent -nd --accept=libssl1.0.0_*ubuntu5.*_amd64.deb http://security.ubuntu.com/ubuntu/pool/main/o/openssl1.0/
 RUN apt install ./libssl1.0.0_*.deb
+
+# OpenSSL 3.4.x (OPENSSL_3.2.0 symbols) required by flink-shaded-netty-tcnative-dynamic 2.0.81+,
+# which Ubuntu 24.04 (OpenSSL 3.0.13) lacks. Put it in /usr/local/lib so ldconfig prefers it.
+RUN set -eux; \
+	tmp="$(mktemp -d)"; cd "$tmp"; \
+	wget -q http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl3t64_3.4.1-1ubuntu3_amd64.deb; \
+	dpkg-deb -x libssl3t64_3.4.1-1ubuntu3_amd64.deb extracted; \
+	cp -a extracted/usr/lib/x86_64-linux-gnu/libssl.so.3 extracted/usr/lib/x86_64-linux-gnu/libcrypto.so.3 /usr/local/lib/; \
+	ldconfig; \
+	cd /; rm -rf "$tmp"
