@@ -39,20 +39,20 @@ RUN set -eux; \
   apt-get install -y git
 
 # Install Temurin JDK11
-RUN wget -q https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.19%2B7/OpenJDK11U-jdk_x64_linux_hotspot_11.0.19_7.tar.gz
-RUN tar -C /usr/lib/jvm -xzf OpenJDK11U-jdk_x64_linux_hotspot_11.0.19_7.tar.gz
+RUN wget -qO- https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.19%2B7/OpenJDK11U-jdk_x64_linux_hotspot_11.0.19_7.tar.gz \
+  | tar -C /usr/lib/jvm -xz
 
 # Install Temurin JDK17
-RUN wget -q https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.7%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.7_7.tar.gz
-RUN tar -C /usr/lib/jvm -xzf OpenJDK17U-jdk_x64_linux_hotspot_17.0.7_7.tar.gz
+RUN wget -qO- https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.7%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.7_7.tar.gz \
+  | tar -C /usr/lib/jvm -xz
 
 # Install Temurin JDK21
-RUN wget -q https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.1%2B12/OpenJDK21U-jdk_x64_linux_hotspot_21.0.1_12.tar.gz
-RUN tar -C /usr/lib/jvm -xzf OpenJDK21U-jdk_x64_linux_hotspot_21.0.1_12.tar.gz
+RUN wget -qO- https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.1%2B12/OpenJDK21U-jdk_x64_linux_hotspot_21.0.1_12.tar.gz \
+  | tar -C /usr/lib/jvm -xz
 
 # Install Temurin JDK25
-RUN wget -q https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.3%2B9/OpenJDK25U-jdk_x64_linux_hotspot_25.0.3_9.tar.gz
-RUN tar -C /usr/lib/jvm -xzf OpenJDK25U-jdk_x64_linux_hotspot_25.0.3_9.tar.gz
+RUN wget -qO- https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.3%2B9/OpenJDK25U-jdk_x64_linux_hotspot_25.0.3_9.tar.gz \
+  | tar -C /usr/lib/jvm -xz
 
 # Add java to PATH for all users, and user
 # use java8 by default, but provide java11 as well
@@ -79,13 +79,12 @@ ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so"
 
 # Install go
 RUN mkdir -p /usr/share/go \
- && curl -fsSL -o /tmp/go.tar.gz https://go.dev/dl/go1.18.1.linux-amd64.tar.gz \
- && tar -xzf /tmp/go.tar.gz -C /usr/share/go --strip-components=1 \
- && rm -f /tmp/go.tar.gz \
+ && wget -qO- https://go.dev/dl/go1.27.1.linux-amd64.tar.gz \
+  | tar -xz -C /usr/share/go --strip-components=1 \
  && ln -s /usr/share/go/bin/go /usr/bin/go
 
 # Install hugo
-RUN mkdir -p /usr/share/hugo \ 
+RUN mkdir -p /usr/share/hugo \
  && curl -fsSL -o /tmp/hugo.tar.gz https://github.com/gohugoio/hugo/releases/download/v0.98.0/hugo_extended_0.98.0_Linux-64bit.tar.gz \
  && tar -xzf /tmp/hugo.tar.gz -C /usr/share/hugo \
  && rm -f /tmp/hugo.tar.gz \
