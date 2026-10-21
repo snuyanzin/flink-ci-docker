@@ -94,7 +94,6 @@ RUN mkdir -p /usr/share/hugo \
 
 # Install maven
 ARG MAVEN_VERSION=3.8.6
-ARG USER_HOME_DIR="/root"
 ARG BASE_URL=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${MAVEN_VERSION}
 
 RUN mkdir -p /usr/share/maven \
@@ -105,20 +104,35 @@ RUN mkdir -p /usr/share/maven \
 
 ENV MAVEN_HOME /usr/share/maven
 
-# Download the Maven Wrapper once, then use it to stage its jar and pre-warm the
-# Maven distribution cache, so CI's ./mvnw needs no network to bootstrap.
-ARG MAVEN_WARM_VERSIONS="3.8.6 3.9.16"
+# Pre-warm the Maven distribution cache for both the jar-based and the only-script
+# Maven Wrapper (they use different cache layouts), so CI's ./mvnw needs no network to bootstrap.
+# Entries are <version>:<sha256 of apache-maven-<version>-bin.zip>; distributionUrl must match Flink's byte for byte.
+# The jar-based wrapper only checks that the zip exists once unpacked, so it is replaced with an empty placeholder.
+# Each wrapper is then re-run through a dead proxy to fail the build if it would still go to the network.
+# MAVEN_USER_HOME is honored by both wrappers and lives outside /root, so the cache is found regardless of $HOME or uid.
+ENV MAVEN_USER_HOME=/opt/maven-user-home
+ARG MAVEN_WARM="3.8.6:ccf20a80e75a17ffc34d47c5c95c98c39d426ca17d670f09cd91e877072a9309 3.9.16:5af3b743dd8b876b5c45da33b676251e5f1687712644abb4ee519ca56e1d89ce"
 ARG MAVEN_WRAPPER_VERSION=3.3.4
 RUN set -eux; \
     work="$(mktemp -d)"; cd "$work"; \
-    curl -fsSL -o d.zip "https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper-distribution/${MAVEN_WRAPPER_VERSION}/maven-wrapper-distribution-${MAVEN_WRAPPER_VERSION}-bin.zip"; \
-    unzip -q d.zip; chmod +x mvnw; \
-    mkdir -p /opt/maven-wrapper; \
-    cp .mvn/wrapper/maven-wrapper.jar "/opt/maven-wrapper/maven-wrapper-${MAVEN_WRAPPER_VERSION}.jar"; \
-    for v in $MAVEN_WARM_VERSIONS; do \
-      printf 'distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/%s/apache-maven-%s-bin.zip\n' "$v" "$v" > .mvn/wrapper/maven-wrapper.properties; \
-      ./mvnw --version; \
+    base="https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper-distribution/${MAVEN_WRAPPER_VERSION}/maven-wrapper-distribution-${MAVEN_WRAPPER_VERSION}"; \
+    for type in bin only-script; do \
+      mkdir -p "$type/.mvn/wrapper"; \
+      curl -fsSL -o "$type.zip" "${base}-${type}.zip"; \
+      unzip -q "$type.zip" -d "$type"; chmod +x "$type/mvnw"; \
     done; \
+    for entry in $MAVEN_WARM; do \
+      v="${entry%%:*}"; sha="${entry#*:}"; \
+      for type in bin only-script; do \
+        printf 'distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/%s/apache-maven-%s-bin.zip\ndistributionSha256Sum=%s\n' "$v" "$v" "$sha" > "$type/.mvn/wrapper/maven-wrapper.properties"; \
+        (cd "$type" && ./mvnw --version); \
+      done; \
+      for zip in "$MAVEN_USER_HOME"/wrapper/dists/apache-maven-"$v"-bin/*/apache-maven-"$v"-bin.zip; do : > "$zip"; done; \
+      for type in bin only-script; do \
+        (cd "$type" && https_proxy=http://127.0.0.1:9 MAVEN_OPTS="-Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=9" ./mvnw --version); \
+      done; \
+    done; \
+    chmod -R a+rX "$MAVEN_USER_HOME"; \
     cd /; rm -rf "$work"
 
 # Use UTF-8
