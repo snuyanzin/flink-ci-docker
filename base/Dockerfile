@@ -1,3 +1,4 @@
+# check=skip=FromPlatformFlagConstDisallowed
 FROM --platform=linux/amd64 ubuntu:24.04
 
 # install packages
@@ -71,12 +72,12 @@ RUN update-alternatives --set jps /usr/lib/jvm/java-8-openjdk-amd64/bin/jps
 RUN update-alternatives --set jstack /usr/lib/jvm/java-8-openjdk-amd64/bin/jstack
 RUN update-alternatives --set javadoc /usr/lib/jvm/java-8-openjdk-amd64/bin/javadoc
 
-ENV JAVA_HOME_8_X64 "/usr/lib/jvm/java-8-openjdk-amd64"
-ENV JAVA_HOME_11_X64 "/usr/lib/jvm/jdk-11.0.19+7"
-ENV JAVA_HOME_17_X64 "/usr/lib/jvm/jdk-17.0.7+7"
-ENV JAVA_HOME_21_X64 "/usr/lib/jvm/jdk-21.0.1+12"
-ENV JAVA_HOME_25_X64 "/usr/lib/jvm/jdk-25.0.3+9"
-ENV JAVA_HOME "/usr/lib/jvm/java-8-openjdk-amd64"
+ENV JAVA_HOME_8_X64="/usr/lib/jvm/java-8-openjdk-amd64"
+ENV JAVA_HOME_11_X64="/usr/lib/jvm/jdk-11.0.19+7"
+ENV JAVA_HOME_17_X64="/usr/lib/jvm/jdk-17.0.7+7"
+ENV JAVA_HOME_21_X64="/usr/lib/jvm/jdk-21.0.1+12"
+ENV JAVA_HOME_25_X64="/usr/lib/jvm/jdk-25.0.3+9"
+ENV JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
 ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so"
 
 # Install go
@@ -102,7 +103,7 @@ RUN mkdir -p /usr/share/maven \
   && rm -f /tmp/apache-maven.tar.gz \
   && ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
 
-ENV MAVEN_HOME /usr/share/maven
+ENV MAVEN_HOME=/usr/share/maven
 
 # Pre-warm the Maven distribution cache for both the jar-based and the only-script
 # Maven Wrapper (they use different cache layouts), so CI's ./mvnw needs no network to bootstrap.
@@ -150,9 +151,9 @@ RUN set -eux; \
 
 # Use UTF-8
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen ; locale-gen ; update-locale en_US.UTF-8
-ENV LC_ALL "en_US.UTF-8"
-ENV LANG "en_US.UTF-8"
-ENV LANGUAGE "en_US.UTF-8"
+ENV LC_ALL="en_US.UTF-8"
+ENV LANG="en_US.UTF-8"
+ENV LANGUAGE="en_US.UTF-8"
 
 # OpenSSL 1.0.0, required by netty-tcnative on older Flink branches (e.g. 1.20)
 RUN wget -r --no-parent -nd --accept=libssl1.0.0_*ubuntu5.*_amd64.deb http://security.ubuntu.com/ubuntu/pool/main/o/openssl1.0/
